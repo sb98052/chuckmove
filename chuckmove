@@ -14,6 +14,10 @@ parser.add_option("-q", "--quiet",
                           action="store_false", dest="verbose",
                           help="be vewwy quiet (I'm hunting wabbits)")
 
+parser.add_option("-r", "--reuse",
+                          action="store_false", dest="reuse",
+                          help="Reuse .orig files. Dangerous!")
+
 parser.add_option("-o", "--old", 
                           metavar="old", help="Old namespace")
 
@@ -29,7 +33,7 @@ new_ns = options.new
 
 comment = '#' + SkipTo(lineEnd)
 
-module_ns = Word(alphanums + '-' + '_' + '.')
+module_ns = Word(alphanums + '-' + '_' + '.' + '*')
 old_module_ns = Combine(old_ns + Optional(Combine('.'+module_ns)))
 end_of_python_line = Or([lineEnd,comment])
 
@@ -38,7 +42,7 @@ as_suffix = 'as' + module_ns
 import_pure = 'import' + old_module_ns 
 import_pure_line = import_pure + Optional(as_suffix) + end_of_python_line
 
-import_from = 'from' + old_module_ns + 'import' + module_ns 
+import_from = 'from' + old_module_ns + 'import' + commaSeparatedList
 import_from_line = import_from + Optional(as_suffix) + end_of_python_line
 
 import_line = Or([import_pure_line, import_from_line])
@@ -56,9 +60,11 @@ for root, dirs, files in os.walk(f):
         if (n.endswith('.py')):
             full_path = '/'.join([root,n])
             orig_path = full_path + '.orig'
-            print 'Working on %s:'%full_path
-            if (not os.path.exists(orig_path)):
-                print 'Copying %s->%s:'%(full_path,orig_path)
+            if (options.verbose):
+                print 'Working on %s:'%full_path
+            if (not os.path.exists(orig_path) or not options.reuse):
+                if (options.verbose):
+                    print 'Copying %s->%s:'%(full_path,orig_path)
                 copy(full_path, orig_path)
             f_contents = open(orig_path).read()
             new_contents = []
