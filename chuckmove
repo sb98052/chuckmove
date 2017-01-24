@@ -57,6 +57,7 @@ except IndexError:
 
 for root, dirs, files in os.walk(f):
     for n in files:
+        changed = False
         if (n.endswith('.py')):
             full_path = '/'.join([root,n])
             orig_path = full_path + '.orig'
@@ -71,12 +72,18 @@ for root, dirs, files in os.walk(f):
             for l in f_contents.splitlines():
                 try:
                     match = import_line.parseString(l)
+                    old_l = l
                     l = l.replace(old_ns, new_ns)
+                    if (old_l!=l):
+                        changed = True
                 except ParseException:
                     pass
+
                 new_contents.append(l)
 
             new_file = '\n'.join(new_contents)
             if (f_contents.endswith('\n')):
                 new_file+='\n'
-            open(full_path,'w').write(new_file)
+
+            if (changed):
+                open(full_path,'w').write(new_file)
